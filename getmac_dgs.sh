@@ -19,7 +19,7 @@ fi
 
 getcookie() {
 
-CurrentAuth=$(curl --silent 'http://'$SwitchIP'/cgi/login.cgi' -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/login2.htm' --data 'pass='$SwitchPass |grep -Po '(?<=document.cookie=).*' | sed -e 's/^"//' -e 's/"$//')
+CurrentAuth=$(curl --silent --compressed 'http://'$SwitchIP'/cgi/login.cgi' -H 'Connection: keep-alive' -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/login2.htm' --data 'pass='$SwitchPass |grep -Po '(?<=document.cookie=).*' | sed -e 's/^"//' -e 's/"$//')
 
 if [ -z "$CurrentAuth" ]
 then
@@ -49,7 +49,7 @@ do
 done
 >&2 echo $SwitchIP "wait response..."
 
-TotalPages=$(curl --silent 'http://'$SwitchIP'/DGS-1100-16_1.10.016/DS/LAChannelSetting.js+DynamicForwarding.js' -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/iss/H_46_DF_Table.htm' -H 'Cookie: '$CurrentAuth | grep -Po '(?<=TotalPage = ).*[^;]')
+TotalPages=$(curl --silent --compressed 'http://'$SwitchIP'/DGS-1100-16_1.10.016/DS/LAChannelSetting.js+DynamicForwarding.js' -H 'Accept: */*' -H 'Connection: keep-alive' -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/iss/H_46_DF_Table.htm' -H 'Cookie: '$CurrentAuth | grep -Po '(?<=TotalPage = ).*[^;]')
 
 CurPage=1
 
@@ -58,12 +58,12 @@ CurPage=1
 while [ "$CurPage" -le "$TotalPages" ]
 do
 >&2 echo "Process" $CurPage "page"
-curl --silent 'http://'$SwitchIP'/cgi/changePage.cgi'-H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/iss/H_46_DF_Table.htm' -H 'Cookie: '$CurrentAuth --data 'pagenum='$CurPage >/dev/null
+curl --silent 'http://'$SwitchIP'/cgi/changePage.cgi' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' --compressed -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/iss/H_46_DF_Table.htm' -H 'Cookie: '$CurrentAuth -H 'Connection: keep-alive'  --data 'pagenum='$CurPage >/dev/null
 
-curl --silent 'http://'$SwitchIP'/DGS-1100-16_1.10.016/DS/LAChannelSetting.js+DynamicForwarding.js' -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/iss/H_46_DF_Table.htm' -H 'Cookie: '$CurrentAuth | pcregrep -M 'DynamicForwarding = .*(\n|.)*Total' |sed -e 's/DynamicForwarding = \[//g' -e '$d' -e 's/],//g' -e 's/\[//g' -e 's/\]];//g' -e "s/'//g" -e 's/,/;/g'
+curl --silent 'http://'$SwitchIP'/DGS-1100-16_1.10.016/DS/LAChannelSetting.js+DynamicForwarding.js' -H 'Accept: */*' --compressed -H 'Referer: http://'$SwitchIP'/DGS-1100-16_1.10.016/iss/H_46_DF_Table.htm' -H 'Cookie: '$CurrentAuth -H 'X-Compress: 1' -H 'Connection: keep-alive' | pcregrep -M 'DynamicForwarding = .*(\n|.)*Total' |sed -e 's/DynamicForwarding = \[//g' -e '$d' -e 's/],//g' -e 's/\[//g' -e 's/\]];//g' -e "s/'//g" -e 's/,/;/g'
 
 CurPage=$(( CurPage+1 ))
 
 done
 >&2 echo "Logout from "$SwitchIP
-curl --silent -H 'Cookie: '$CurrentAuth 'http://'$SwitchIP'/cgi/logout.cgi' >/dev/null
+curl --compressed --silent -H 'Connection: keep-alive' -H 'Cookie: '$CurrentAuth 'http://'$SwitchIP'/cgi/logout.cgi' >/dev/null
